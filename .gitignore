@@ -1,6 +1,6 @@
 #cs498 setting
 MPs.rc
-
+cs498.py3
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
