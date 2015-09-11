@@ -1,9 +1,12 @@
 # Simple example of taxiing as scripted behavior
 # import Pilot; a=Pilot.Pilot(); a.start()
 
-import Ckpt as Ckpt
-
+import Ckpt
 import imp, sys
+
+try: from . import Utilities, Fgfs							# being run from parent directory
+except SystemError: import Utilities, Fgfs		# being run from ClassCode
+
 def rel():
 	imp.reload(sys.modules['Pilot'])
 
@@ -16,24 +19,36 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		sf.wayPts = sf.getWayPts(tsk)
 		sf.wayPts.reverse()
 		sf.curPts = sf.wayPts.pop()
-			
+		sf.prevDist = 0.0
+		sf.prevTime = 0.0
+		sf.prevLocation = [0.0,0.0]
 			
 	def ai(sf,fDat,fCmd):
 		'''Override with the Pilot decision maker, args: fltData and cmdData from Utilities.py'''
+
+
+
 		if not fDat.running:
 			sf.strtTime = fDat.time
 		sf.duration = fDat.time - sf.strtTime
-
-		wayPts = sf.wayPts
-
-		while(len(sf.wayPts) != 0):
-			curPts = wayPts.pop()
-			
-
-
-
 		if abs(fDat.roll) > 5.:			# first check for excessive roll
 			print('Points lost for tipping; {:.1f} degrees at {:.1f} seconds'.format(fDat.roll, sf.duration))
+
+		if(sf.prevTime == fDat.time): #if the same package, skip
+			return
+		else:
+			curLocation = [fDat.latitude, fDat.longitude]
+			print('curLocation', curLocation)
+			dist = Utilities.dist(curLocation, sf.prevLocation)
+			speed = dist/(fDat.time-sf.duration)
+			print('speed: ', speed)
+
+			# update variables
+			sf.prevTime = fDat.time
+			sf.prevLocation = curLocation
+
+
+
 		if sf.duration < 2.0:			# full power for 2 seconds
 			fCmd.throttle = 1.0
 			fCmd.rudder = -0.7
@@ -47,7 +62,6 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 			fCmd.throttle = 0.0
 			fCmd.rudder = 0.7
 		else: return 'stop'
-
 
 		
 		
