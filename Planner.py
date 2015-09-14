@@ -17,30 +17,46 @@ class Planner:
 
 	def plan(sf,fDat,fCmd):
 	
+
 		if(sf.prevTime == fDat.time): #if the same package, skip
-			return
+			return True
 		else:
 			curLocation = [fDat.latitude, fDat.longitude]
 			print('curLocation', curLocation)
-			print('destLocation', sf.curPts[0:1])
-			dist = Utilities.dist(curLocation, sf.prevLocation)
+			print('destLocation', sf.curPts[0:2])
+			dist = Pdist(curLocation, sf.prevLocation)
 			print('dist util:', dist)
-			print('Pdist', Pdist(curLocation, sf.curPts[0:1]))
+			print('Pdist', Pdist(curLocation, sf.curPts[0:2]))
 			speed = dist/(fDat.time-sf.prevTime)
 			print('speed: ', speed)
+
+			curHeading = fDat.head
+			print('heading: ', curHeading)
+			print('destheading:', Pheading(curLocation, sf.curPts[0:2]))
+			print('===================================================')
 
 			# update variables
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
 
-			curHeading = fDat.head
-			print('heading: ', curHeading)
-			print('destheading:', Pheading(curLocation, sf.curPts[0:1]))
+			return True
+
+		# TODO: check for switch waypt criteria 
+		if not nextWayPt():
+			return False
+
+	def nextWayPt(sf):
+		if not sf.wayPts:
+			return False
+		else:
+			sf.curPts = sf.wayPts.pop()
+			return True
+
 
 # distance function based on http://www.movable-type.co.uk/scripts/latlong.html
 # distance in meters
-def Pdist(lli,llf):
-	R = 6371000.0
+def Pdist(lli,llf): 
+	R = 6371000.0 #earth's radius
 	theta1 = math.radians(lli[0])
 	theta2 = math.radians(llf[0])
 	dtheta = math.radians(llf[0] - lli[0])

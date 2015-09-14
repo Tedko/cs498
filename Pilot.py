@@ -24,14 +24,15 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 			
 	def ai(sf,fDat,fCmd):
 		'''Override with the Pilot decision maker, args: fltData and cmdData from Utilities.py'''
-		sf.planner.plan(fDat, fCmd)
+		if not sf.planner.plan(fDat, fCmd):
+			return 'stop'
 
 		if not fDat.running:
 			sf.strtTime = fDat.time
 		sf.duration = fDat.time - sf.strtTime
 
 
-		
+
 		if abs(fDat.roll) > 5.:			# first check for excessive roll
 			print('Points lost for tipping; {:.1f} degrees at {:.1f} seconds'.format(fDat.roll, sf.duration))
 		if sf.duration < 2.0:			# full power for 2 seconds
