@@ -15,13 +15,13 @@ class Planner:
 		sf.prevDist = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID(-2.0)
-		sf.headPID = PID.PID(1.1)
+		sf.speedPID = PID.PID( -2/10000 )
+		sf.headPID = PID.PID(-0.001)
 		sf.destSpeed = 3.0;
 		sf.radius = 2.0
 
 	def plan(sf,fDat,fCmd):
-	
+
 
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
@@ -57,9 +57,15 @@ class Planner:
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
 
+			i=0
 			if(distToWpt < sf.radius):
+				i+=1
+				print('+++++++++++')
+				print(i,'pts is cleared')
+				sf.speedPID.pidClear
+				sf.headPID.pidClear
 				if not sf.nextWayPt():
-					return False				
+					return False
 
 			return True
 
@@ -74,7 +80,7 @@ class Planner:
 
 # distance function based on http://www.movable-type.co.uk/scripts/latlong.html
 # distance in meters
-def Pdist(lli,llf): 
+def Pdist(lli,llf):
 	R = 6371000.0 #earth's radius
 	theta1 = math.radians(lli[0])
 	theta2 = math.radians(llf[0])
@@ -103,6 +109,3 @@ def Pheading(lli, llf):
 	heading = math.degrees(math.atan2(y, x))%360.0
 
 	return heading
-
-
-
