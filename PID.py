@@ -9,7 +9,7 @@ class PID ():
 
 	def pid(sf,error,time):
 		sf.cumError += error
-		return (sf.cumError/time)*sf.coeff
+		return error*(sf.cumError/time)*sf.coeff
 
 	def pidClear():
 		sf.cumError = 0
