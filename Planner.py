@@ -15,8 +15,8 @@ class Planner:
 		sf.prevDist = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( -2/100 )
-		sf.headPID = PID.PID(-0.001)
+		sf.speedPID = PID.PID( -2,2,2 )
+		sf.headPID = PID.PID(-0.001,2,2)
 		sf.destSpeed = 3.0;
 		sf.radius = 2.0
 
