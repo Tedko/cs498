@@ -15,7 +15,7 @@ class Planner:
 		sf.prevDist = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( -2/10000 )
+		sf.speedPID = PID.PID( -2/100 )
 		sf.headPID = PID.PID(-0.001)
 		sf.destSpeed = 3.0;
 		sf.radius = 2.0
@@ -62,8 +62,8 @@ class Planner:
 				i+=1
 				print('+++++++++++')
 				print(i,'pts is cleared')
-				sf.speedPID.pidClear
-				sf.headPID.pidClear
+				sf.speedPID.pidClear()
+				sf.headPID.pidClear()
 				if not sf.nextWayPt():
 					return False
 

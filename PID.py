@@ -11,5 +11,5 @@ class PID ():
 		sf.cumError += error
 		return error*(sf.cumError/time)*sf.coeff
 
-	def pidClear():
+	def pidClear(sf):
 		sf.cumError = 0
