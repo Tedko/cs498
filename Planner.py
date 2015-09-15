@@ -1,6 +1,7 @@
 import Ckpt
 import imp, sys
 import math
+import PID
 
 try: from . import Utilities, Fgfs							# being run from parent directory
 except SystemError: import Utilities, Fgfs		# being run from ClassCode
@@ -14,6 +15,10 @@ class Planner:
 		sf.prevDist = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
+		sf.speedPID = PID.PID(-2.0)
+		sf.headPID = PID.PID(1.1)
+		sf.destSpeed = 3.0;
+		sf.radius = 2.0
 
 	def plan(sf,fDat,fCmd):
 	
@@ -21,29 +26,43 @@ class Planner:
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:
+			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
 			print('curLocation', curLocation)
 			print('destLocation', sf.curPts[0:2])
 			dist = Pdist(curLocation, sf.prevLocation)
+			distToWpt = Pdist(curLocation, sf.curPts[0:2])
 			print('dist util:', dist)
-			print('Pdist', Pdist(curLocation, sf.curPts[0:2]))
-			speed = dist/(fDat.time-sf.prevTime)
+			print('dist to waypoint', distToWpt)
+			speed = dist/(timeDiff)
 			print('speed: ', speed)
 
 			curHeading = fDat.head
+			destHeading = Pheading(curLocation, sf.curPts[0:2])
 			print('heading: ', curHeading)
-			print('destheading:', Pheading(curLocation, sf.curPts[0:2]))
+			print('destheading:', destHeading)
+
+			print('timeDiff: ', timeDiff)
+			print('speedPID return: ', sf.speedPID.pid(sf.destSpeed-speed,timeDiff))
+			print('headPID return: ', sf.headPID.pid(destHeading-curHeading,timeDiff))
+
+			fCmd.throttle = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
+			fCmd.rudder = (sf.headPID.pid(destHeading-curHeading,timeDiff)/180) - 1
+
+			print('new throttle: ', fCmd.throttle)
+			print('new rudder: ', fCmd.rudder)
 			print('===================================================')
 
 			# update variables
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
 
+			if(distToWpt < sf.radius):
+				if not sf.nextWayPt():
+					return False				
+
 			return True
 
-		# TODO: check for switch waypt criteria 
-		if not nextWayPt():
-			return False
 
 	def nextWayPt(sf):
 		if not sf.wayPts:

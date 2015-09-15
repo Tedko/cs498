@@ -6,6 +6,7 @@ class PID ():
 	def __init__(sf,coeff):
 		sf.cumError = 0
 		sf.coeff = coeff
-	def pid(error,time):
+
+	def pid(sf,error,time):
 		sf.cumError += error
-		return (cumError/time)*sf.coeff
+		return (sf.cumError/time)*sf.coeff
