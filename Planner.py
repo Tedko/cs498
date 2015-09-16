@@ -12,7 +12,7 @@ class Planner:
 	def __init__(sf,wayPts=None):
 		sf.wayPts = wayPts
 		sf.curPts = sf.wayPts.pop()
-		sf.prevDist = 0.0
+		sf.prevDistToWpt = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
 		sf.speedPID = PID.PID( 2,-2,2 )
@@ -53,12 +53,8 @@ class Planner:
 			print('new rudder: ', fCmd.rudder)
 			print('===================================================')
 
-			# update variables
-			sf.prevTime = fDat.time
-			sf.prevLocation = curLocation
-
 			i=0
-			if(distToWpt < sf.radius):
+			if(distToWpt < sf.radius && distToWpt > sf.prevDistToWpt):
 				i+=1
 				print('+++++++++++')
 				print(i,'pts is cleared')
@@ -66,6 +62,11 @@ class Planner:
 				sf.headPID.pidClear()
 				if not sf.nextWayPt():
 					return False
+
+			# update variables
+			sf.prevTime = fDat.time
+			sf.prevLocation = curLocation
+			sf.prevDistToWpt = distToWpt
 
 			return True
 
