@@ -12,7 +12,8 @@ class PID ():
 	def pid(sf,error,timeDiff):
 		sf.cumError += error
 		derivative = (sf.prevError-error)/timeDiff
-		integral = sf.cumError*timeDiff
+		#print("diri :",derivative)
+		integral = sf.cumError*timeDiff*0.9
 		ret = error*sf.coeffP + integral*sf.coeffI + derivative*sf.coeffD
 		print("cumError:", (sf.cumError*timeDiff) )
 		print("P:",error*sf.coeffP )

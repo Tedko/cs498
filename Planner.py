@@ -28,8 +28,8 @@ class Planner:
 		else:
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
-			print('curLocation', curLocation)
-			print('destLocation', sf.curPts[0:2])
+			#print('curLocation', curLocation)
+			#print('destLocation', sf.curPts[0:2])
 			dist = Pdist(curLocation, sf.prevLocation)
 			distToWpt = Pdist(curLocation, sf.curPts[0:2])
 			print('dist to waypoint', distToWpt)
@@ -41,19 +41,23 @@ class Planner:
 			print('heading: ', curHeading)
 			print('destheading:', destHeading)
 
-			print('timeDiff: ', timeDiff)
-			print('speedPID return: ', sf.speedPID.pid(sf.destSpeed-speed,timeDiff))
-			print('headPID return: ', sf.headPID.pid(destHeading-curHeading,timeDiff))
+			#print('timeDiff: ', timeDiff)
+			#print('speedPID return: ', sf.speedPID.pid(sf.destSpeed-speed,timeDiff))
+			headPIDRet = sf.headPID.pid(destHeading-curHeading,timeDiff)
+			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
 
-			fCmd.throttle = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
-			fCmd.rudder = (sf.headPID.pid(destHeading-curHeading,timeDiff)/180) - 1
+			print('headPID return: ',headPIDRet)
 
-			print('new throttle: ', fCmd.throttle)
+			#fCmd.throttle = speedPIDRet
+			fCmd.throttle = 50
+			fCmd.rudder = (headPIDRet/180) - 1
+
+			#print('new throttle: ', fCmd.throttle)
 			print('new rudder: ', fCmd.rudder)
 			print('===================================================')
 
 			i=0
-			if(distToWpt < sf.radius && distToWpt > sf.prevDistToWpt):
+			if(distToWpt < sf.radius and distToWpt > sf.prevDistToWpt):
 				i+=1
 				print('+++++++++++')
 				print(i,'pts is cleared')
