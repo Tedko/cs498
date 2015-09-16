@@ -8,18 +8,18 @@ class PID ():
 		sf.coeffP = coeffP
 		sf.coeffI = coeffI
 		sf.coeffD = coeffD
-		sf.lastError = 0
-	def pid(sf,error,time):
+		sf.prevError = 0
+	def pid(sf,error,timeDiff):
 		sf.cumError += error
-		ret = error*sf.coeffP + (sf.cumError*time)*sf.coeffI + (sf.lastError-error)/time*sf.coeffD
+		derivative = (sf.prevError-error)/timeDiff
+		integral = sf.cumError*timeDiff
+		ret = error*sf.coeffP + integral*sf.coeffI + derivative*sf.coeffD
+		print("cumError:", (sf.cumError*timeDiff) )
+		print("P:",error*sf.coeffP )
+		print("I:",integral*sf.coeffI )
+		print("D:",derivative*sf.coeffD )
 
-		print("P:",error*sf.coeffP)
-		print("I:",(sf.cumError*time)*sf.coeffI )
-		print("time:", time )
-		print("cumError:", (sf.cumError*time) )
-		print("D:",(sf.lastError-error)/time*sf.coeffD)
-
-		sf.lastError = error
+		sf.prevError = error
 		return ret
 	def pidClear(sf):
 		sf.cumError = 0

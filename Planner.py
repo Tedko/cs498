@@ -15,7 +15,7 @@ class Planner:
 		sf.prevDist = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( 2,-2,2 )
+		sf.speedPID = PID.PID( 20,-2,2 )
 		sf.headPID = PID.PID( -1,2,2 )
 		sf.destSpeed = 3.0;
 		sf.radius = 2.0
@@ -32,7 +32,6 @@ class Planner:
 			print('destLocation', sf.curPts[0:2])
 			dist = Pdist(curLocation, sf.prevLocation)
 			distToWpt = Pdist(curLocation, sf.curPts[0:2])
-			print('dist util:', dist)
 			print('dist to waypoint', distToWpt)
 			speed = dist/(timeDiff)
 			print('speed: ', speed)
