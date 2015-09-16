@@ -15,9 +15,9 @@ class Planner:
 		sf.prevDistToWpt = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( 20,-2,2 )
-		sf.headPID = PID.PID( -1,2,2 )
-		sf.destSpeed = 3.0;
+		sf.speedPID = PID.PID( 0.4,0.2,0.02 )
+		sf.headPID = PID.PID( 0.02,0.02,0.02 )
+		sf.destSpeed = 7.0;
 		sf.radius = 2.0
 
 	def plan(sf,fDat,fCmd):
@@ -28,11 +28,11 @@ class Planner:
 		else:
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
-			#print('curLocation', curLocation)
-			#print('destLocation', sf.curPts[0:2])
+			print('curLocation', curLocation)
+			print('destLocation', sf.curPts[0:2])
 			dist = Pdist(curLocation, sf.prevLocation)
 			distToWpt = Pdist(curLocation, sf.curPts[0:2])
-			print('dist to waypoint', distToWpt)
+			print('dist to waypt', distToWpt)
 			speed = dist/(timeDiff)
 			print('speed: ', speed)
 
@@ -41,19 +41,17 @@ class Planner:
 			print('heading: ', curHeading)
 			print('destheading:', destHeading)
 
-			#print('timeDiff: ', timeDiff)
-			#print('speedPID return: ', sf.speedPID.pid(sf.destSpeed-speed,timeDiff))
-			headPIDRet = sf.headPID.pid(destHeading-curHeading,timeDiff)
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
+			headPIDRet = sf.headPID.pid(destHeading-curHeading,timeDiff)
 
+			print('speedPID return: ', speedPIDRet)
 			print('headPID return: ',headPIDRet)
 
-			#fCmd.throttle = speedPIDRet
-			fCmd.throttle = 50
-			fCmd.rudder = (headPIDRet/180) - 1
+			fCmd.throttle = speedPIDRet
+			fCmd.rudder = headPIDRet
+			print('rudder:',fCmd.rudder)
+			print('throttle:',fCmd.throttle)
 
-			#print('new throttle: ', fCmd.throttle)
-			print('new rudder: ', fCmd.rudder)
 			print('===================================================')
 
 			i=0
