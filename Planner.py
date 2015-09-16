@@ -56,11 +56,10 @@ class Planner:
 
 			print('===================================================')
 
-			i=0
+
 			if(distToWpt < sf.radius and distToWpt > sf.prevDistToWpt):
-				i+=1
 				print('+++++++++++')
-				print(i,'pts is cleared')
+				print('pts is cleared')
 				sf.speedPID.pidClear()
 				sf.headPID.pidClear()
 				if not sf.nextWayPt():
