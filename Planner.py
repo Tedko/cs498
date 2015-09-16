@@ -37,6 +37,8 @@ class Planner:
 			print('speed: ', speed)
 
 			curHeading = fDat.head
+			#if(curHeading>180):
+			#	curHeading=curHeading-360
 			destHeading = Pheading(curLocation, sf.curPts[0:2])
 			print('heading: ', curHeading)
 			print('destheading:', destHeading)
