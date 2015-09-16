@@ -17,7 +17,7 @@ class Planner:
 		sf.prevLocation = [0.0,0.0]
 		sf.speedPID = PID.PID( 0.4,0.2,0.02 )
 		sf.headPID = PID.PID( 0.02,0.02,0.02 )
-		sf.destSpeed = 7.0;
+		sf.destSpeed = 8.0;
 		sf.radius = 2.0
 
 	def plan(sf,fDat,fCmd):
@@ -37,14 +37,15 @@ class Planner:
 			print('speed: ', speed)
 
 			curHeading = fDat.head
-			#if(curHeading>180):
-			#	curHeading=curHeading-360
+
 			destHeading = Pheading(curLocation, sf.curPts[0:2])
 			print('heading: ', curHeading)
 			print('destheading:', destHeading)
-
+			headDiff = (destHeading-curHeading)%360
+			if (headDiff > 180):
+				headDiff = headDiff - 360
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
-			headPIDRet = sf.headPID.pid(destHeading-curHeading,timeDiff)
+			headPIDRet = sf.headPID.pid(headDiff,timeDiff)
 
 			print('speedPID return: ', speedPIDRet)
 			print('headPID return: ',headPIDRet)
@@ -58,8 +59,8 @@ class Planner:
 
 
 			if(distToWpt < sf.radius and distToWpt > sf.prevDistToWpt):
-				print('+++++++++++')
-				print('pts is cleared')
+				print('++++++++++++++++++++++++')
+				print('Pt is cleared')
 				sf.speedPID.pidClear()
 				sf.headPID.pidClear()
 				if not sf.nextWayPt():
