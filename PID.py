@@ -21,5 +21,6 @@ class PID ():
 
 		sf.prevError = error
 		return ret
+
 	def pidClear(sf):
 		sf.cumError = 0
