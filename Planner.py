@@ -17,8 +17,8 @@ class Planner:
 		sf.prevLocation = [0.0,0.0]
 		sf.speedPID = PID.PID( 0.4,0.2,0.02 )
 		sf.headPID = PID.PID( 0.02,0.02,0.02 )
-		sf.destSpeed = 8.0;
-		sf.radius = 2.0
+		sf.destSpeed = 7.0;
+		sf.radius = 3.0
 
 	def plan(sf,fDat,fCmd):
 
