@@ -15,9 +15,9 @@ class Planner:
 		sf.prevDistToWpt = 0.0
 		sf.prevTime = 0.0
 		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( 0.4,0.2,0.02 )
-		sf.headPID = PID.PID( 0.02,0.02,0.02 )
-		sf.destSpeed = 8.0;
+		sf.speedPID = PID.PID( 0.45,0.2,0.025 )
+		sf.headPID = PID.PID( 0.025,0.02,0.02 )
+		sf.destSpeed = 6.0;
 		sf.radius = 2.0
 
 	def plan(sf,fDat,fCmd):
@@ -28,39 +28,45 @@ class Planner:
 		else:
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
-			#print('curLocation', curLocation)
-			#print('destLocation', sf.curPts[0:2])
+			print('curLocation', curLocation)
+			print('destLocation', sf.curPts[0:2])
 			dist = Pdist(curLocation, sf.prevLocation)
 			distToWpt = Pdist(curLocation, sf.curPts[0:2])
-			#print('dist to waypt', distToWpt)
+
+			if(distToWpt < 25):
+				sf.destSpeed = 3.0
+			else:
+				sf.destSpeed = 6.0
+
+			print('dist to waypt', distToWpt)
 			speed = dist/(timeDiff)
-			#print('speed: ', speed)
+			print('speed: ', speed)
 
 			curHeading = fDat.head
 
 			destHeading = Pheading(curLocation, sf.curPts[0:2])
-			#print('heading: ', curHeading)
-			#print('destheading:', destHeading)
+			print('heading: ', curHeading)
+			print('destheading:', destHeading)
 			headDiff = (destHeading-curHeading)%360
 			if (headDiff > 180):
 				headDiff = headDiff - 360
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
 			headPIDRet = sf.headPID.pid(headDiff,timeDiff)
 
-			#print('speedPID return: ', speedPIDRet)
-			#print('headPID return: ',headPIDRet)
+			print('speedPID return: ', speedPIDRet)
+			print('headPID return: ',headPIDRet)
 
 			fCmd.throttle = speedPIDRet
 			fCmd.rudder = headPIDRet
-			#print('rudder:',fCmd.rudder)
-			#print('throttle:',fCmd.throttle)
-			#
-			#print('===================================================')
+			print('rudder:',fCmd.rudder)
+			print('throttle:',fCmd.throttle)
+			
+			print('===================================================')
 
 
 			if(distToWpt < sf.radius and distToWpt > sf.prevDistToWpt):
-				#print('++++++++++++++++++++++++')
-				#print('Pt is cleared')
+				print('++++++++++++++++++++++++')
+				print('Pt is cleared')
 				sf.speedPID.pidClear()
 				sf.headPID.pidClear()
 				if not sf.nextWayPt():
