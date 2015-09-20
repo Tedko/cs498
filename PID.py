@@ -12,9 +12,9 @@ class PID ():
 		derivative = (error-sf.prevError)/timeDiff
 		integral = (sf.prevError+error)*timeDiff/2*0.9
 		ret = error*sf.coeffP + integral*sf.coeffI + derivative*sf.coeffD
-		print("P:",error*sf.coeffP )
-		print("I:",integral*sf.coeffI )
-		print("D:",derivative*sf.coeffD )
+		#print("P:",error*sf.coeffP )
+		#print("I:",integral*sf.coeffI )
+		#print("D:",derivative*sf.coeffD )
 
 		sf.prevError = error
 		return ret

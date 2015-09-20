@@ -24,8 +24,6 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 
 	def ai(sf,fDat,fCmd):
 		'''Override with the Pilot decision maker, args: fltData and cmdData from Utilities.py'''
-		# curLocation = [fDat.latitude, fDat.longitude]
-		# print('AI location', curLocation)
 
 		if not sf.planner.plan(fDat, fCmd):
 			return 'stop'
