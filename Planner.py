@@ -9,83 +9,73 @@ except SystemError: import Utilities, Fgfs		# being run from ClassCode
 
 class Planner:
 
-	def __init__(sf,wayPts=None):
-		sf.wayPts = wayPts
-		sf.curPts = sf.wayPts.pop()
-		sf.prevDistToWpt = 0.0
+	def __init__(sf,angle,alchange,finalspeed):
 		sf.prevTime = 0.0
-		sf.prevLocation = [0.0,0.0]
-		sf.speedPID = PID.PID( 0.45,0.2,0.025 )
-		sf.headPID = PID.PID( 0.025,0.02,0.02 )
-		sf.destSpeed = 6.0;
-		sf.radius = 2.0
+		sf.speedPID = PID.PID( 0.05,0.0002,0.01 )
+		sf.rollPID = PID.PID( 0.002,0.002,0.001 )
+		sf.pitchPID = PID.PID( -0.007,-0.002,-0.01 )
+		sf.destSpeed = finalspeed
+		sf.roll = 0
+		sf.altitude = 2000
+		sf.alchange = alchange
+		sf.destPitch = angle
+		sf.radius = 1
 
 	def plan(sf,fDat,fCmd):
 
-
+		if( sf.destSpeed > 200 and sf.alchange > 0 )
+			print("Too fast to climb up!")
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
 			print('curLocation', curLocation)
-			print('destLocation', sf.curPts[0:2])
-			dist = Pdist(curLocation, sf.prevLocation)
-			distToWpt = Pdist(curLocation, sf.curPts[0:2])
+			print('altitude',fDat.altitude)
+			Altchange = fDat.altitude - sf.altitude # curr - 2000(start al)
+			speed = fDat.kias
+			roll = fDat.roll
+			print('roll: ',roll)
+			print('kias: ', speed)
 
-			if(distToWpt < 25):
-				sf.destSpeed = 3.0
-			else:
-				sf.destSpeed = 6.0
+			curPitch = fDat.pitch #pitch (angle)
+			destPitch = sf.destPitch
+			print('pitch: ', curPitch)
+			print('destPitch: ', destPitch)
+			pitchDiff = destPitch-curPitch
 
-			print('dist to waypt', distToWpt)
-			speed = dist/(timeDiff)
-			print('speed: ', speed)
-
-			curHeading = fDat.head
-
-			destHeading = Pheading(curLocation, sf.curPts[0:2])
-			print('heading: ', curHeading)
-			print('destheading:', destHeading)
-			headDiff = (destHeading-curHeading)%360
-			if (headDiff > 180):
-				headDiff = headDiff - 360
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
-			headPIDRet = sf.headPID.pid(headDiff,timeDiff)
-
+			pitchPIDRet = sf.pitchPID.pid(pitchDiff,timeDiff)
+			rollPIDRet = sf.rollPID.pid(sf.roll-roll,timeDiff)
 			print('speedPID return: ', speedPIDRet)
-			print('headPID return: ',headPIDRet)
+			print('pitchPID return: ', pitchPIDRet)
+			print('rollPID return: ', rollPIDRet)
 
 			fCmd.throttle = speedPIDRet
-			fCmd.rudder = headPIDRet
-			print('rudder:',fCmd.rudder)
+
+			fCmd.elevator = pitchPIDRet
+			fCmd.aileron = rollPIDRet
+			print('aileron:',fCmd.aileron)
+			print('elevator:',fCmd.elevator)
 			print('throttle:',fCmd.throttle)
-			
+
 			print('===================================================')
 
-
-			if(distToWpt < sf.radius and distToWpt > sf.prevDistToWpt):
+			if(abs(Altchange - sf.alchange) < 1 ):
 				print('++++++++++++++++++++++++')
-				print('Pt is cleared')
+				print('cleared')
 				sf.speedPID.pidClear()
-				sf.headPID.pidClear()
-				if not sf.nextWayPt():
-					return False
+				sf.pitchPID.pidClear()
+				return False
 
 			#update variables
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
-			sf.prevDistToWpt = distToWpt
 
 			return True
 
 
-	def nextWayPt(sf):
-		if not sf.wayPts:
-			return False
-		else:
-			sf.curPts = sf.wayPts.pop()
-			return True
+
 
 
 # distance function based on http://www.movable-type.co.uk/scripts/latlong.html

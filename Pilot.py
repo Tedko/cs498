@@ -13,14 +13,12 @@ def rel():
 
 class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 
-	def __init__(sf,tsk='MP2',rc=False,gui=False):
+	def __init__(sf,tsk='HW4a',rc=False,gui=False):
 		super().__init__(tsk, rc, gui)
 		sf.strtTime = None
 		sf.duration = None
 
-		tempWayPts = sf.getWayPts(tsk)
-		tempWayPts.reverse()
-		sf.planner = Planner.Planner(tempWayPts)
+		sf.planner = Planner.Planner(10,2000,200)#angle(pitch),alchange,finalspeed
 
 	def ai(sf,fDat,fCmd):
 		'''Override with the Pilot decision maker, args: fltData and cmdData from Utilities.py'''
