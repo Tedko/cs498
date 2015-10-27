@@ -17,31 +17,42 @@ class Planner:
 		sf.destSpeed = finalspeed
 		sf.roll = 0
 		sf.altitude = 2000
+		sf.prevAltitude = 2000
+		sf.prevLocation = [37.613555908203125, -122.35719299316406]
 		sf.alchange = alchange
 		sf.destPitch = angle
 		sf.radius = 1
 
 	def plan(sf,fDat,fCmd):
 
-		if( sf.destSpeed > 200 and sf.alchange > 0 )
-			print("Too fast to climb up!")
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
+			curAlt = fDat.altitude
 			print('curLocation', curLocation)
-			print('altitude',fDat.altitude)
-			Altchange = fDat.altitude - sf.altitude # curr - 2000(start al)
-			speed = fDat.kias
+			print('altitude',curAlt)
+
 			roll = fDat.roll
+			speed = fDat.kias
 			print('roll: ',roll)
 			print('kias: ', speed)
+			print('finalKias: ',sf.destSpeed)
 
-			curPitch = fDat.pitch #pitch (angle)
+
+			groudDist = Pdist(curLocation, sf.prevLocation)
+			altDist = curAlt - sf.prevAltitude
+			Altchange = curAlt - sf.altitude # curr - 2000(start al)
+			if groudDist != 0 :
+				degree = math.degrees(math.atan(altDist/groudDist))
+				print('climb/des degree: ',degree)
+
+
+			curPitch = fDat.pitch # pitch (angle)
 			destPitch = sf.destPitch
 			print('pitch: ', curPitch)
-			print('destPitch: ', destPitch)
+			print('dest climb/des degree: ', destPitch)
 			pitchDiff = destPitch-curPitch
 
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
@@ -61,6 +72,7 @@ class Planner:
 
 			print('===================================================')
 
+
 			if(abs(Altchange - sf.alchange) < 1 ):
 				print('++++++++++++++++++++++++')
 				print('cleared')
@@ -71,7 +83,7 @@ class Planner:
 			#update variables
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
-
+			sf.prevAltitude = curAlt
 			return True
 
 
