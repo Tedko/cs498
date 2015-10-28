@@ -18,7 +18,9 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		sf.strtTime = None
 		sf.duration = None
 
-		sf.planner = Planner.Planner(10,2000,200)#angle(pitch),alchange,finalspeed
+		sf.planner = Planner.Planner(10,10000,500)
+
+		sf.planner = Planner.Planner(-10,-1000,500)#angle(pitch),alchange,finalspeed
 
 	def ai(sf,fDat,fCmd):
 		'''Override with the Pilot decision maker, args: fltData and cmdData from Utilities.py'''
