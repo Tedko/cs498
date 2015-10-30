@@ -28,30 +28,33 @@ class Planner:
 
 
 	def pc(sf,fDat,fCmd):
-		if(sf.alchange > 7000):
+		if(sf.alchange > 7000 or sf.alchange < -2000):
 			print('Altitude change too large!')
-			return 7000
+			#return False
 
 		if(sf.alchange * sf.destPitch < 0):
 			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destPitch)
-			return False
+			if(alchange > 0):
+				return (1,sf.finalspeed)#angle and speed
+			else:
+				return (-1,sf.finalspeed)
 
 		if(sf.destSpeed < 0):
 			print('non positive speed! Please enter meaningful speed.')
-			return False
+			return (sf.destPitch,250)
 
 		if(sf.destSpeed > 260 ):
 			print('speed too fast, round it down to 250')
 			sf.destSpeed = 250
-			return 250
+			return (sf.destPitch,250)
 		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
-			print('speed too fast for this angle, program will try to climb first')
+			print('speed too fast for this angle')
+
+		return 'OK'
 
 
 	def plan(sf,fDat,fCmd):
 
-		# print("sfal",sf.alchange)
-		# print("sfpi",sf.destPitch)
 		if(sf.alchange > 7000):
 			print('Altitude change too large!')
 			return False
@@ -122,7 +125,7 @@ class Planner:
 			print('elevator:',fCmd.elevator)
 			print('throttle:',fCmd.throttle)
 
-			print('===================================================')
+			print('===========================================')
 
 
 
