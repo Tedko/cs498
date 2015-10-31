@@ -21,8 +21,8 @@ class Planner:
 		sf.prevAltitude = 2000
 		sf.prevLocation = [37.613555908203125, -122.35719299316406]
 		sf.alchange = alchange
-		sf.destPitch = angle
-		sf.destPitchcp = angle
+		sf.destAngle = angle
+		sf.destAnglecp = angle
 		sf.radius = 1
 		sf.maxSpeed = (28369*angle^5)/2088450000-(2396963*angle^4)/1392300000+(9425711*angle^3)/119340000-(42493891*angle^2)/27846000+(879136*angle)/116025+265
 
@@ -32,8 +32,8 @@ class Planner:
 			print('Altitude change too large!')
 			#return False
 
-		if(sf.alchange * sf.destPitch < 0):
-			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destPitch)
+		if(sf.alchange * sf.destAngle < 0):
+			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destAngle)
 			if(alchange > 0):
 				return (1,sf.finalspeed)#angle and speed
 			else:
@@ -41,12 +41,12 @@ class Planner:
 
 		if(sf.destSpeed < 0):
 			print('non positive speed! Please enter meaningful speed.')
-			return (sf.destPitch,250)
+			return (sf.destAngle,250)
 
 		if(sf.destSpeed > 260 ):
 			print('speed too fast, round it down to 250')
 			sf.destSpeed = 250
-			return (sf.destPitch,250)#angle,speed
+			return (sf.destAngle,250)#angle,speed
 		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
 			print('speed too fast for this angle, but still can reach')
 		return 'OK'
@@ -81,12 +81,12 @@ class Planner:
 
 
 			curPitch = fDat.pitch # pitch (angle)
-			destPitch = sf.destPitch
+			destAngle = sf.destAngle
 			print('pitch: ', curPitch)
-			print('dest climb/des degree: ', destPitch)
+			print('dest climb/des degree: ', destAngle)
 
 			if groudDist != 0 :
-				pitchPIDRet = sf.pitchPID.pid(sf.destPitch - degree,timeDiff)
+				pitchPIDRet = sf.pitchPID.pid(sf.destAngle - degree,timeDiff)
 				print('pitchPID return: ', pitchPIDRet)
 				fCmd.elevator = pitchPIDRet
 
@@ -107,25 +107,23 @@ class Planner:
 
 			if( abs(Altchange - sf.alchange) < 100 ):
 				print('start level flight')
-				sf.destPitch = 0 # level flight
+				sf.destAngle = 0 # level flight
 			if( abs(Altchange - sf.alchange) > 100 ):
-				sf.destPitch = sf.destPitchcp # level flight
+				sf.destAngle = sf.destAnglecp #
 
 
-			if( abs(Altchange - sf.alchange) < 100 and abs(speed - sf.destSpeed) < 20 ):
+			if( abs(Altchange - sf.alchange) < 50 and abs(speed - sf.destSpeed) < 20 and abs(degree) < 3 ):
 				print('++++++++++++++++++++++++')
-				print('DONE')
 				sf.speedPID.pidClear()
 				sf.pitchPID.pidClear()
 				sf.rollPID.pidClear()
-				return False
-
+				return 'DONE'
 
 			#update variables
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
 			sf.prevAltitude = curAlt
-			return True
+			return
 
 
 

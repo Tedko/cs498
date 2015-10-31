@@ -18,7 +18,7 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		sf.strtTime = None
 		sf.duration = None
 		sf.counter = 1
-		sf.alchange = 1000
+		sf.alchange = 2000
 		sf.angle = 10
 		sf.finalspeed = 500
 		sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#angle,alchange,finalspeed
@@ -33,7 +33,7 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		if sf.counter==1 :
 			sf.pc(fDat,fCmd)
 		sf.counter += 1
-		if not sf.planner.do(fDat, fCmd):
+		if sf.planner.do(fDat, fCmd) == 'DONE':
 			return 'stop'
 
 	def test():
