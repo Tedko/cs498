@@ -46,36 +46,15 @@ class Planner:
 		if(sf.destSpeed > 260 ):
 			print('speed too fast, round it down to 250')
 			sf.destSpeed = 250
-			return (sf.destPitch,250)
+			return (sf.destPitch,250)#angle,speed
 		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
-			print('speed too fast for this angle')
-
+			print('speed too fast for this angle, but still can reach')
 		return 'OK'
 
-
 	def plan(sf,fDat,fCmd):
+		pass
 
-		if(sf.alchange > 7000):
-			print('Altitude change too large!')
-			return False
-
-		if(sf.alchange * sf.destPitch < 0):
-			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destPitch)
-			return False
-
-		if(sf.destSpeed < 0):
-			print('non positive speed! Please enter meaningful speed.')
-			return False
-
-		if(sf.destSpeed > 260 ):
-			print('speed too fast, round it down to 250')
-			sf.destSpeed = 250
-		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
-			print('speed too fast for this angle, program will try to climb first')
-		#double check!
-
-
-	#def do(sf,fDat,fCmd)
+	def do(sf,fDat,fCmd):
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:
@@ -119,15 +98,12 @@ class Planner:
 
 			fCmd.throttle = speedPIDRet
 
-
 			fCmd.aileron = rollPIDRet
 			print('aileron:',fCmd.aileron)
 			print('elevator:',fCmd.elevator)
 			print('throttle:',fCmd.throttle)
 
 			print('===========================================')
-
-
 
 			if( abs(Altchange - sf.alchange) < 100 ):
 				print('start level flight')

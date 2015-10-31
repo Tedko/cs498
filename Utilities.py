@@ -72,7 +72,7 @@ class CmdData:
 
 	def __init__(sf):
 		'''aileron, elevator, rudder, throttle, mixture, magnitos, starter'''
-		sf.aileron = 0.0 ###
+		sf.aileron = 0.0
 		sf.elevator = 0.0 #
 		sf.rudder = 0.0 ##
 		sf.throttle = 0.0 #

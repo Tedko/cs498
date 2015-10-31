@@ -17,10 +17,24 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		super().__init__(tsk, rc, gui)
 		sf.strtTime = None
 		sf.duration = None
-
-		sf.planner = Planner.Planner(10,1000,500)#angle(pitch),alchange,finalspeed
+		sf.counter = 1
+		sf.alchange = 1000
+		sf.angle = 10
+		sf.finalspeed = 500
+		sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#angle,alchange,finalspeed
+	def pc(sf,fDat,fCmd):
+		ret = sf.planner.pc(fDat,fCmd)
+		if ret=='OK' :
+			sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#nothing
+		else :
+			sf.planner = Planner.Planner(int(ret[0]),sf.alchange,int(ret[1]) )
 
 	def ai(sf,fDat,fCmd):
-
-		if not sf.planner.plan(fDat, fCmd):
+		if sf.counter==1 :
+			sf.pc(fDat,fCmd)
+		sf.counter += 1
+		if not sf.planner.do(fDat, fCmd):
 			return 'stop'
+
+	def test():
+		pass
