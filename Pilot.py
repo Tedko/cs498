@@ -18,9 +18,9 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		sf.strtTime = None
 		sf.duration = None
 		sf.counter = 1
-		sf.alchange = 2000
-		sf.angle = 10
-		sf.finalspeed = 500
+		sf.alchange = 3000
+		sf.angle = 40
+		sf.finalspeed = 230
 		sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#angle,alchange,finalspeed
 	def pc(sf,fDat,fCmd):
 		ret = sf.planner.pc(fDat,fCmd)

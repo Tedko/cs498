@@ -10,46 +10,63 @@ except SystemError: import Utilities, Fgfs		# being run from ClassCode
 class Planner:
 
 	def __init__(sf,angle,alchange,finalspeed):
+		sf.firstRun = True
+		sf.startTime = 0.0
 		sf.prevTime = 0.0
-		sf.speedPID = PID.PID( 0.05,0.0008,0.01 )
-		sf.rollPID = PID.PID( 0.002,0.002,0.001 )
+		sf.speedPID = PID.PID( 0.053,0.00008,0.01 )
+		sf.rollPID = PID.PID( 0.002,0.001,0.001 )
 		sf.pitchPID = PID.PID( -0.009,-0.001,-0.0001 )#pitch 1 goes down
 		sf.destSpeed = finalspeed
 		sf.destSpeedcp = finalspeed
 		sf.roll = 0
 		sf.altitude = 2000
 		sf.prevAltitude = 2000
-		sf.prevLocation = [37.613555908203125, -122.35719299316406]
+		sf.prevLocation = [37.613555908203125, -122.35719299316406]#start pt
 		sf.alchange = alchange
 		sf.destAngle = angle
 		sf.destAnglecp = angle
 		sf.radius = 1
 		sf.maxSpeed = (28369*angle^5)/2088450000-(2396963*angle^4)/1392300000+(9425711*angle^3)/119340000-(42493891*angle^2)/27846000+(879136*angle)/116025+265
-
+		sf.levelFlight = False
 
 	def pc(sf,fDat,fCmd):
-		if(sf.alchange > 7000 or sf.alchange < -2000):
-			print('Altitude change too large!')
-			#return False
-
-		if(sf.alchange * sf.destAngle < 0):
-			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destAngle)
-			if(alchange > 0):
-				return (1,sf.finalspeed)#angle and speed
-			else:
-				return (-1,sf.finalspeed)
-
-		if(sf.destSpeed < 0):
-			print('non positive speed! Please enter meaningful speed.')
-			return (sf.destAngle,250)
+		condition = False
+		if(sf.alchange > 6000 or sf.alchange < -2000):
+			print('WARNING:Altitude change too large!')
 
 		if(sf.destSpeed > 260 ):
 			print('speed too fast, round it down to 250')
+			condition = True
 			sf.destSpeed = 250
-			return (sf.destAngle,250)#angle,speed
+		if(sf.destAngle > 65):
+			condition = True
+			sf.destAngle = 70
+		if(sf.destAngle < -65):
+			condition = True
+			sf.destAngle = -65
+
+		if(sf.alchange * sf.destAngle < 0):
+			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destAngle)
+			condition = True
+			if(alchange > 0):
+				sf.destAngle = 5
+				#return (5,sf.destSpeed)#angle and speed
+			else:
+				sf.destAngle = -5
+				#return (-5,sf.destSpeed)
+
+		if(sf.destSpeed < 95):
+			sf.destSpeed = 95
+			condition = True
+			#return (sf.destAngle,90)
+
 		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
 			print('speed too fast for this angle, but still can reach')
-		return 'OK'
+
+		if condition :
+			return (sf.destAngle,sf.destSpeed)
+		else:
+			return 'OK'
 
 	def plan(sf,fDat,fCmd):
 		pass
@@ -58,12 +75,13 @@ class Planner:
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:
+			curTime = fDat.time
 			timeDiff = fDat.time-sf.prevTime
 			curLocation = [fDat.latitude, fDat.longitude]
 			curAlt = fDat.altitude
-			print('curLocation', curLocation)
+			#print('curLocation', curLocation)
 			print('altitude',curAlt)
-			print('needed Altchange',sf.alchange)
+			print('final Alt',sf.alchange+2000)
 
 			roll = fDat.roll
 			speed = fDat.kias
@@ -85,34 +103,57 @@ class Planner:
 			print('pitch: ', curPitch)
 			print('dest climb/des degree: ', destAngle)
 
-			if groudDist != 0 :
-				pitchPIDRet = sf.pitchPID.pid(sf.destAngle - degree,timeDiff)
-				print('pitchPID return: ', pitchPIDRet)
-				fCmd.elevator = pitchPIDRet
-
+			if(curTime - sf.startTime < 8):
+				if groudDist != 0 :
+					pitchPIDRet = sf.pitchPID.pid(0 - degree,timeDiff)
+					print('pitchPID return: ', pitchPIDRet)
+					fCmd.elevator = pitchPIDRet
+			else:
+				if groudDist != 0 :
+					pitchPIDRet = sf.pitchPID.pid(sf.destAngle - degree,timeDiff)
+					print('pitchPID return: ', pitchPIDRet)
+					fCmd.elevator = pitchPIDRet
 
 			speedPIDRet = sf.speedPID.pid(sf.destSpeed-speed,timeDiff)
-			rollPIDRet = sf.rollPID.pid(sf.roll-roll,timeDiff)
 			print('speedPID return: ', speedPIDRet)
-			print('rollPID return: ', rollPIDRet)
-
 			fCmd.throttle = speedPIDRet
 
-			fCmd.aileron = rollPIDRet
+			# COMMENT OUT THESE LINE IF DONT WANT ROLL!!!
+			if(curTime - sf.startTime < 3.5):
+				#rollPIDRet = sf.rollPID.pid(sf.roll-roll,timeDiff)
+				#print('rollPID return: ', rollPIDRet)
+				#if sf.roll < 165:
+				fCmd.aileron = 1
+				#else :
+				#	pass
+					#fCmd.aileron = -1
+			else:
+				rollPIDRet = sf.rollPID.pid(sf.roll-roll,timeDiff)
+				print('rollPID return: ', rollPIDRet)
+				fCmd.aileron = rollPIDRet
+
 			print('aileron:',fCmd.aileron)
 			print('elevator:',fCmd.elevator)
 			print('throttle:',fCmd.throttle)
 
 			print('===========================================')
 
+			if(sf.destSpeed < 200  and speed > sf.destSpeed+35):
+				sf.speedPID.pidClear()
+
 			if( abs(Altchange - sf.alchange) < 100 ):
 				print('start level flight')
+				sf.levelFlight = True
 				sf.destAngle = 0 # level flight
-			if( abs(Altchange - sf.alchange) > 100 ):
-				sf.destAngle = sf.destAnglecp #
+			if( abs(Altchange - sf.alchange) > 100 and sf.levelFlight):
+				if Altchange < sf.alchange:
+					sf.destAngle = 5 #
+				else: # higher than the final Alt
+					sf.destAngle = - 5
 
 
-			if( abs(Altchange - sf.alchange) < 50 and abs(speed - sf.destSpeed) < 20 and abs(degree) < 3 ):
+
+			if( abs(Altchange - sf.alchange) < 100 and abs(speed - sf.destSpeed) < 20 and abs(degree) < 3 ):
 				print('++++++++++++++++++++++++')
 				sf.speedPID.pidClear()
 				sf.pitchPID.pidClear()
@@ -120,6 +161,9 @@ class Planner:
 				return 'DONE'
 
 			#update variables
+			if sf.firstRun:
+				sf.startTime = fDat.time
+				sf.firstRun = False
 			sf.prevTime = fDat.time
 			sf.prevLocation = curLocation
 			sf.prevAltitude = curAlt

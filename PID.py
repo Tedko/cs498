@@ -21,4 +21,4 @@ class PID ():
 		return ret
 
 	def pidClear(sf):
-		sf.cumError = 0
+		sf.integral = 0
