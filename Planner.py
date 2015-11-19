@@ -9,69 +9,74 @@ except SystemError: import Utilities, Fgfs		# being run from ClassCode
 
 class Planner:
 
-	def __init__(sf,angle,alchange,finalspeed):
+	def __init__(sf):
 		sf.firstRun = True
 		sf.startTime = 0.0
 		sf.prevTime = 0.0
 		sf.speedPID = PID.PID( 0.053,0.00008,0.01 )
 		sf.rollPID = PID.PID( 0.002,0.001,0.001 )
 		sf.pitchPID = PID.PID( -0.009,-0.001,-0.0001 )#pitch 1 goes down
-		sf.destSpeed = finalspeed
-		sf.destSpeedcp = finalspeed
+		sf.destSpeed = 0
+		sf.destSpeedcp = 0
 		sf.roll = 0
 		sf.altitude = 2000
 		sf.prevAltitude = 2000
 		sf.prevLocation = [37.613555908203125, -122.35719299316406]#start pt
-		sf.alchange = alchange
-		sf.destAngle = angle
-		sf.destAnglecp = angle
+		sf.alchange = 0
+		sf.destAngle = 0
+		sf.destAnglecp = 0
 		sf.radius = 1
-		sf.maxSpeed = (28369*angle^5)/2088450000-(2396963*angle^4)/1392300000+(9425711*angle^3)/119340000-(42493891*angle^2)/27846000+(879136*angle)/116025+265
+		sf.maxSpeed = 0
 		sf.levelFlight = False
 
-	def pc(sf,fDat,fCmd):
+	def PC(sf,fDat, deltaAlt, angle, finalSpeed):
 		condition = False
-		if(sf.alchange > 6000 or sf.alchange < -2000):
+		sf.maxSpeed = (28369*angle^5)/2088450000-(2396963*angle^4)/1392300000+(9425711*angle^3)/119340000-(42493891*angle^2)/27846000+(879136*angle)/116025+265
+		if(deltaAlt > 6000 or deltaAlt < -2000):
 			print('WARNING:Altitude change too large!')
 
-		if(sf.destSpeed > 260 ):
+		if(finalSpeed> 260 ):
 			print('speed too fast, round it down to 250')
 			condition = True
-			sf.destSpeed = 250
-		if(sf.destAngle > 65):
+			finalSpeed = 250
+		if(angle > 65):
 			condition = True
-			sf.destAngle = 70
-		if(sf.destAngle < -65):
+			angle = 70
+		if(angle < -65):
 			condition = True
-			sf.destAngle = -65
+			angle = -65
 
-		if(sf.alchange * sf.destAngle < 0):
-			print('it is not possible to climb/des when the degree has the opposite sign ',sf.alchange * sf.destAngle)
+		if(deltaAlt * deltaAlt < 0):
+			print('it is not possible to climb/des when the degree has the opposite sign ',deltaAlt * angle)
 			condition = True
-			if(alchange > 0):
-				sf.destAngle = 5
+			if(deltaAlt > 0):
+				angle = 5
 				#return (5,sf.destSpeed)#angle and speed
 			else:
-				sf.destAngle = -5
+				angle = -5
 				#return (-5,sf.destSpeed)
 
-		if(sf.destSpeed < 95):
-			sf.destSpeed = 95
+		if(finalSpeed < 95):
+			finalSpeed = 95
 			condition = True
 			#return (sf.destAngle,90)
 
-		if(sf.destSpeed > sf.maxSpeed and sf.alchange >= 0):
+		if(finalSpeed > sf.maxSpeed and deltaAlt >= 0):
 			print('speed too fast for this angle, but still can reach')
 
 		if condition :
-			return (sf.destAngle,sf.destSpeed)
+			return (angle,finalSpeed)
 		else:
 			return 'OK'
 
-	def plan(sf,fDat,fCmd):
-		pass
+	def PLAN(sf, fDat, deltaAlt, angle, finalSpeed):
+		sf.alchange = deltaAlt
+		sf.destAngle = angle
+		sf.destSpeed = finalSpeed
+		sf.destSpeedcp = finalSpeed
+		sf.maxSpeed = (28369*angle^5)/2088450000-(2396963*angle^4)/1392300000+(9425711*angle^3)/119340000-(42493891*angle^2)/27846000+(879136*angle)/116025+265
 
-	def do(sf,fDat,fCmd):
+	def DO(sf,fDat,fCmd):
 		if(sf.prevTime == fDat.time): #if the same package, skip
 			return True
 		else:

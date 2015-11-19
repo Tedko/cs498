@@ -3,7 +3,7 @@
 import imp, sys
 def rel():
 	imp.reload(sys.modules['Utilities'])
-
+	
 import os.path
 import struct, math, pickle
 from tkinter import filedialog as tkf
@@ -21,19 +21,18 @@ if os.path.basename(_CCDir) != 'ClassCode':
 	_STDir = _CCDir
 	_CCDir = os.path.join(_STDir, 'ClassCode')
 	if not os.path.isdir(_CCDir): raise IOError('No ClassCode in {}'.format(os.path.dirname(_STDir)))
-else: _STDir = os.path.dirname(_CCDir)
-
-# latitude differences, measured along a longitude line and in longitude degrees are constant,
+	
+# latitude differences, measured along a longitude line and in longitude degrees are constant, 
 # but longitude differences, measured along a latitude and in latitude degrees are shorter in higher lats
 # multiply by _lat2lon to convert measurements along a latitude line into the same distance measured along a longitude line
 
 _deg2met = 110977.			# meters in one degree latitude
-_lat2lon = 0.794				# (small, var sized) degrees longitude * _lat2lon to get equiv dist in (const) latitude degs at SFO
+_lat2lon = 0.794				# multiply degrees along longitude * this to get equiv dist in latitude degs
 _eps = 1e-10						# epsilon to use for zero w/ roundoff errors
 
 class FltData:
-
-	datStrct = struct.Struct('>ffffffff?')					# structure to decode flight data packet
+	
+	datStrct = struct.Struct('>ffffffff?f')					# structure to decode flight data packet
 	datPktLen = struct.calcsize(datStrct.format)		# correct packet length
 
 	@staticmethod
@@ -52,14 +51,21 @@ class FltData:
 		sf.longitude = 0.0	# west longitude position (negative)
 		sf.time = 0.0			# simulator clock time of this observation
 		sf.running = False	# Boolean for engine running
+		#sf.vspeed = 0.0			# Vertical speed
+		sf.rpm = 0.0			# Engine rpm
+		#sf.xaccel = 0.0
+		#sf.yaccel = 0.0
+		#sf.zaccel = 0.0
 
 	def getFData(sf):
 		'''convenience function for easy access, returning all data in a tuple'''
-		return sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running
+		# return sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running, sf.vspeed, sf.rpm, sf.xaccel, sf.yaccel, sf.zaccel
+		return sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running, sf.rpm
 
 	def decFData(sf,pkt):
 		'''unpack an fgfs data packet into data fields'''
-		sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running =  sf.datStrct.unpack(pkt)
+		# sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running, sf.vspeed, sf.rpm, sf.xaccel, sf.yaccel, sf.zaccel =  sf.datStrct.unpack(pkt)
+		sf.kias, sf.altitude, sf.head, sf.pitch, sf.roll, sf.latitude, sf.longitude, sf.time, sf.running, sf.rpm =  sf.datStrct.unpack(pkt)
 
 class CmdData:
 
@@ -73,13 +79,13 @@ class CmdData:
 	def __init__(sf):
 		'''aileron, elevator, rudder, throttle, mixture, magnitos, starter'''
 		sf.aileron = 0.0
-		sf.elevator = 0.0 #
-		sf.rudder = 0.0 ##
-		sf.throttle = 0.0 #
+		sf.elevator = 0.0
+		sf.rudder = 0.0
+		sf.throttle = 0.0
 		sf.mixture = 0.0
 		sf.magnitos = 3
 		sf.starter = False
-
+		
 	def encCmds(sf,ckpt):
 		'''Update the display and return a packet reflecting the current command values'''
 		if ckpt.guiP:
@@ -87,7 +93,7 @@ class CmdData:
 			ckpt.thrS.set(sf.throttle)
 			ckpt.mixS.set(sf.mixture)
 		return sf.cmdStrct.pack(sf.aileron, sf.elevator, sf.rudder, sf.throttle, sf.mixture, sf.magnitos, sf.starter)
-
+		
 def getWayPts(tsk,ccDir='notSet',fnam='notSet'):
 	'''read in a waypoints file, return the list of (lat, long, heading) points'''
 	if ccDir == 'notSet': ccDir = _CCDir
@@ -103,7 +109,7 @@ def getWayPts(tsk,ccDir='notSet',fnam='notSet'):
 			pts.append([float(num.strip()) for num in pt.split(',')])
 	print('{}\n{}:  {} pts'.format(wpFilNam, fileTitle, len(pts)))
 	return pts
-
+	
 def getPathData(fnam='flt.pkl',crashed=False):
 	'''return a numpy array of the 9 flight data values and 7 command data values from the pickle file of the flight path and command path'''
 	with open(fnam, 'rb') as fd:
@@ -134,7 +140,22 @@ def readFP(fltFil='LastFlight.pkl'):
 	path = getPathData(fltFil)
 	return path[:8].T
 
-
+	
+#~ def readFpbOLD(fltFil='LastFlight.fpb'):
+	#~ '''read in a Flight Path Binary file; each packed point contains:
+	#~ kias, altitude, head, pitch, roll, latitude, longitude, time, runningP
+	#~ collect all but runningP into a Numpy array which is returned'''
+#~ #	global flt, pt
+	#~ datStrct = struct.Struct('>ffffffff?')					# structure to decode flight data packet
+	#~ datPktLen = struct.calcsize(datStrct.format)		# correct packet length
+	#~ flt = []
+	#~ with open(fltFil, 'rb') as inFil:
+		#~ while True:
+			#~ pt = inFil.read(datPktLen)
+			#~ if pt == b'': break
+			#~ flt.append(datStrct.unpack(pt)[:-1])
+	#~ return flt
+	
 def dist(lli,llf):
 	'''return the distance in latitude dgrees from lat/lon lli to lat/lon llf'''
 	dLat = llf[0] - lli[0]
@@ -143,41 +164,14 @@ def dist(lli,llf):
 	return dst
 
 # top level function for grading a flightpath against a set of waypoints
-# given a packed binary flightpath file
+# given a packed binary flightpath file 
 #		a sequence flight data packets of kias, altitude, head, pitch, roll, latitude, longitude, time, runningP
 #		and a weighpoint file .wpts; see getWayPts
 # return the total minimum distances of the path to the waypoints, the time duration of the critical portion of the path, the number of times the plane tipped, and a vector of the minimal distances to the individual waypoints
 
-
-
-#~ if todo empty, break w/ current best
-#~ pop todo;
-  #~ wptsLeft empty, compare & update best
-  #~ if cost is worse than best, break w/ currrent best
-  #~ (pop waypoint, add assignment, add cost) if cost < best, add to todo
-  #~ if fltIdx + 1 < length: add to todo: (next fltIdx, same assignment & cost)
-  #~ if any added, sort
-#~
-# list of:
-#~ (total distance so far
-#~ next wptIdx
-#~ next fltIdx
-#~ list of (wptIdx, fltIdx, dist) commitments so far
-#~ fltPath, lstwptIdx, lstFltIdx
-#
-# keep track of best finished
-
-def nrmLL(llpts, llCntr=(0., 0.)):
-	'''return a normalized np array of lat/long points llpts; translate origin to lat/long llCntr, multiply long by _lat2lon, mulitply all my _deg2met'''
-	pts = np.array(llpts)[:, :2] - llCntr[:2]		# drop any extra columns & translate
-	pts[:, 1] *= _lat2lon
-	pts *= _deg2met
-	return pts
-
-
 def grade(fltFil='notSet',ret=True):
 	'''Given a LastFlight file, extract the MP task string, grade the LastFlight file wrt the task's waypoints returning the solution's total distance travelled, time duration, sum dists to waypts, num tips, intervals & distances by waypoints '''
-	global dists, bstDists, bstSegs
+#	global spds, fltPath
 	if not _NUMPYP:
 		print('Numpy is missing; no access to grade computation')
 		return
@@ -187,109 +181,53 @@ def grade(fltFil='notSet',ret=True):
 					initialdir=(_STDir),
 					filetypes=[('Fligt Path file', '.pkl')] )
 	tsk = fltFil.split('.')[1]
-	rawWpts = getWayPts(tsk, _CCDir)
-	npWpts = np.array(rawWpts)[:, :2]
-	cntr = npWpts.mean(axis=0)
-	nrmWpts = nrmLL(npWpts, cntr)				# normalized waypoints in meters from cntr orign
-	fltPth = np.array(readFP(fltFil))
-	nrmFltPts = nrmLL(fltPth[:, 5:7], cntr)		# normalized flight points in meters from cntr orign
-	lngWpts = nrmWpts.shape[0]
-	lngSeg = nrmFltPts.shape[0] - 1				# number of flight segments
-	dists = np.empty((lngWpts, lngSeg), dtype=float)
-	for i in range(lngWpts):						# insert distances of each segment to each waypoint
-		for j in range(lngSeg):
-			dists[i, j] = pt2lne(nrmFltPts[j], nrmFltPts[j+1], nrmWpts[i])
-	nearWpt = 0
-	bstWpt = np.argmin(dists, axis=0)
-	for i in range(lngSeg):
-		if bstWpt[i] == nearWpt: continue		# nearest to current waypoint
-		elif bstWpt[i] == nearWpt +1: 			# nearest to next waypoint; update current
-			nearWpt += 1
-#			print('next', nearWpt)
-		else:
-			dists[bstWpt[i], i] = 1.e10				# out of order waypoint; set distance high
-#			print('nullifying', bstWpt[i], i)
-#	perhaps better to treat as HMM following segment sequence; or at least run this again after any changes...
-	wpdsts = np.min(dists, axis=1)				# minimum distances to each waypoint
-	wptErrs = wpdsts.sum()							# total minimum waypoint distances
-	wpidxs = np.argmin(dists, axis=1)			# low segment index of the minimum-distance waypoint segments
-	if not (np.arange(lngWpts) == np.argmin(dists, axis=0)[wpidxs]).all():		# should be waypoint indexes [0, lngWpts)
-		print('FLAW in graded waypoint sequence:', np.argmin(dists, axis=0)[wpidxs])
-	totDst = 0.
+#	wpts = Utilities.getWayPts(tsk, _CCDir)
+	wpts = getWayPts(tsk, _CCDir)
+	fltPath = np.array(readFP(fltFil))
+	wpidxs,wpdsts = dsts2wps(wpts, fltPath)				# waypt index array & waypt distance array
+	totDst = 0.;					# total distance traveled
 	strtIdx = wpidxs[0];		lstIdx = wpidxs[-1] + 1		# beginning & end of the solution's intervals
 	spds = np.zeros(lstIdx - strtIdx+2, dtype=float)
 	for i in range(strtIdx, lstIdx):
-		dst = dist(fltPth[i, 5:7], fltPth[i+1, 5:7]) * _deg2met
-		spds[i-strtIdx] = dst / (fltPth[i+1, 7] - fltPth[i, 7])
+		dst = dist(fltPath[i, 5:7], fltPath[i+1, 5:7]) * _deg2met
+		spds[i-strtIdx] = dst / (fltPath[i+1, 7] - fltPath[i, 7])
 		totDst += dst
 #	print('speed', spds[20:].min(), spds.max(), spds.mean(), spds.var())
+	wptErrs = wpdsts.sum()
 	spdVar = spds.var()
-	dur = fltPth[lstIdx, -1] - fltPth[strtIdx, -1]				# time end of last inteval less start of first
+	dur = fltPath[lstIdx, -1] - fltPath[strtIdx, -1]				# time end of last inteval less start of first
 	durMin = dur / 60.
 	score = wptErrs + spdVar + durMin
-	fltPitRol = np.abs(fltPth[strtIdx : lstIdx, 3 : 5])		# from flight path get abs pitch & roll
+	fltPitRol = np.abs(fltPath[strtIdx : lstIdx, 3 : 5])		# from flight path get abs pitch & roll
 	tipd = np.logical_and(fltPitRol[:, 0] > 5., fltPitRol[:,1] > 5.).sum()	# Number pitch/roll > 5 deg.
 	if tipd > 0: score += 5.
-	print('Score for file {:}, interval {:} to {:}: {:.3f}'.format(os.path.basename(fltFil), strtIdx, lstIdx, score))
+	print('WptErrs: {}, DurMin: {}, spdVar: {}'.format(wptErrs, durMin, spdVar))
+	print('Taxiing score, interval {:} to {:}: {:.3f}'.format(strtIdx, lstIdx, score))
 	if ret: return score, wptErrs, spdVar, durMin, tipd, totDst, wpidxs, wpdsts
 
-#~ def gradeOLD(fltFil='notSet',ret=True):
-	#~ '''Given a LastFlight file, extract the MP task string, grade the LastFlight file wrt the task's waypoints returning the solution's total distance travelled, time duration, sum dists to waypts, num tips, intervals & distances by waypoints '''
-#~ #	global spds, fltPath
-	#~ if not _NUMPYP:
-		#~ print('Numpy is missing; no access to grade computation')
-		#~ return
-	#~ if fltFil == 'notSet':
-		#~ fltFil = tkf.askopenfilename(
-					#~ title='Choose a LastFlight file',
-					#~ initialdir=(_STDir),
-					#~ filetypes=[('Fligt Path file', '.pkl')] )
-	#~ tsk = fltFil.split('.')[1]
-	#~ wpts = getWayPts(tsk, _CCDir)
-	#~ fltPath = np.array(readFP(fltFil))
-	#~ wpidxs,wpdsts = dsts2wps(wpts, fltPath)				# waypt index array & waypt distance array
-	#~ totDst = 0.;					# total distance traveled
-	#~ strtIdx = wpidxs[0];		lstIdx = wpidxs[-1] + 1		# beginning & end of the solution's intervals
-	#~ spds = np.zeros(lstIdx - strtIdx+2, dtype=float)
-	#~ for i in range(strtIdx, lstIdx):
-		#~ dst = dist(fltPath[i, 5:7], fltPath[i+1, 5:7]) * _deg2met
-		#~ spds[i-strtIdx] = dst / (fltPath[i+1, 7] - fltPath[i, 7])
-		#~ totDst += dst
-#~ #	print('speed', spds[20:].min(), spds.max(), spds.mean(), spds.var())
-	#~ wptErrs = wpdsts.sum()
-	#~ spdVar = spds.var()
-	#~ dur = fltPath[lstIdx, -1] - fltPath[strtIdx, -1]				# time end of last inteval less start of first
-	#~ durMin = dur / 60.
-	#~ score = wptErrs + spdVar + durMin
-	#~ fltPitRol = np.abs(fltPath[strtIdx : lstIdx, 3 : 5])		# from flight path get abs pitch & roll
-	#~ tipd = np.logical_and(fltPitRol[:, 0] > 5., fltPitRol[:,1] > 5.).sum()	# Number pitch/roll > 5 deg.
-	#~ if tipd > 0: score += 5.
-	#~ print('Taxiing score, interval {:} to {:}: {:.3f}'.format(strtIdx, lstIdx, score))
-	#~ if ret: return score, wptErrs, spdVar, durMin, tipd, totDst, wpidxs, wpdsts
-#~
-#~ def dsts2wps(wps,fltPath):
-	#~ '''return two arrays: 1) for each waypoint, the low-index of the closest interval, 2) the distance to that waypoint'''
-	#~ wptIdxs = []
-	#~ wptDsts = []
-	#~ for wp in wps:
-		#~ idx,dst = minDist2Fp(wp, fltPath)
-		#~ wptIdxs.append(idx)
-		#~ wptDsts.append(dst)
-#~ #		wptDsts.append(minDist2Fp(wp, fltPath))
-	#~ return np.array(wptIdxs), np.array(wptDsts)
-
-#~ def minDist2Fp(wp, fp):
-	#~ '''return the left index of the minimum distance segment in FlightPath fp to waypoint wp and its distance'''
-	#~ nwp = np.array(wp[:2])
-	#~ bst = pt2lne(fp[0,5:7], fp[1,5:7], nwp) * _deg2met
-	#~ bstIdx = 0
-	#~ for i in range(1, fp.shape[0] - 1):		# consider each remaining segment
-		#~ dst = pt2lne(fp[i,5:7], fp[i+1,5:7], nwp) * _deg2met
-		#~ if dst < bst:
-			#~ bst = dst
-			#~ bstIdx = i
-	#~ print(' >>>', bstIdx, bst)
-	#~ return bstIdx, bst
+def dsts2wps(wps,fltPath):
+	'''return two arrays: 1) for each waypoint, the low-index of the closest interval, 2) the distance to that waypoint'''
+	wptIdxs = []
+	wptDsts = []
+	for wp in wps:
+		idx,dst = minDist2Fp(wp, fltPath)
+		wptIdxs.append(idx)
+		wptDsts.append(dst)
+#		wptDsts.append(minDist2Fp(wp, fltPath))
+	return np.array(wptIdxs), np.array(wptDsts)
+	
+def minDist2Fp(wp, fp):
+	'''return the left index of the minimum distance segment in FlightPath fp to waypoint wp and its distance'''
+	nwp = np.array(wp[:2])
+	bst = pt2lne(fp[0,5:7], fp[1,5:7], nwp) * _deg2met
+	bstIdx = 0
+	for i in range(1, fp.shape[0] - 1):		# consider each remaining segment
+		dst = pt2lne(fp[i,5:7], fp[i+1,5:7], nwp) * _deg2met
+		if dst < bst:
+			bst = dst
+			bstIdx = i
+	print(' >>>', bstIdx, bst)
+	return bstIdx, bst
 
 def pt2lne(pt0,pt1,pt2):
 	'''compute the Euclidean distance from (y2, x2) point pt2 to the line segment between points pt0 and pt1'''
@@ -306,7 +244,7 @@ def pt2lne(pt0,pt1,pt2):
 	d01 = np.sqrt(e01)
 	u01 = v01 / d01					# unit vec along line segment from pt0 to pt1
 	proj02on01 = u01.dot(v02)
-	if proj02on01 < 0. or proj02on01 > d01:
+	if proj02on01 < 0. or proj02on01 > d01:	
 		return minDirect				# point projects outside of segment
 	e2lne = e02 - proj02on01 * proj02on01	# inside seg so use projected dist
 	if abs(e2lne) < 1e-10: return 0.0

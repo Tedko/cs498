@@ -22,8 +22,8 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 		sf.angle = 40
 		sf.finalspeed = 230
 		sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#angle,alchange,finalspeed
-	def pc(sf,fDat,fCmd):
-		ret = sf.planner.pc(fDat,fCmd)
+	def PC(sf,fDat,fCmd):
+		ret = sf.planner.pc(fDat)
 		if ret=='OK' :
 			sf.planner = Planner.Planner(sf.angle,sf.alchange,sf.finalspeed)#nothing
 		else :
@@ -31,7 +31,7 @@ class Pilot (Ckpt.Ckpt):			# subclass of the class Ckpt in the file Ckpt
 
 	def ai(sf,fDat,fCmd):
 		if sf.counter==1 :
-			sf.pc(fDat,fCmd)
+			sf.PC(fDat,fCmd)
 		sf.counter += 1
 		if sf.planner.do(fDat, fCmd) == 'DONE':
 			return 'stop'
